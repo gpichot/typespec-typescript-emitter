@@ -2,6 +2,17 @@ import { EmitContext, Namespace, Type } from "@typespec/compiler";
 import { getHttpOperation } from "@typespec/http";
 import { resolveType } from "./emit_types_resolve.js";
 
+function getImports(namespace: Namespace): string {
+  const namespaceFile = namespace.name;
+  return Array.from([
+    ...namespace.models.keys(),
+    ...namespace.enums.keys(),
+    ...namespace.unions.keys(),
+  ])
+    .map((m) => `import type { ${m} } from "./${namespaceFile}.ts";`)
+    .join("\n");
+}
+
 export const emitRoutedTypemap = (
   context: EmitContext,
   namespace: Namespace,
@@ -9,6 +20,7 @@ export const emitRoutedTypemap = (
   const ops: {
     [K: string]: {
       // "string" in these does not refer to the type "string"! It's the typescript code as string.
+      params: string;
       request: string;
       response: Array<{ status: number | "unknown"; body: string }>;
     };
@@ -20,20 +32,28 @@ export const emitRoutedTypemap = (
       const httpOp = getHttpOperation(context.program, op);
       const identifier = httpOp[0].path;
       ops[identifier] = {
+        params: "{}",
         request: "null",
         response: [{ status: 200, body: "unknown" }],
       };
 
       // request
+      const args = Array.from(op.parameters.properties.values());
+      const params = args.filter((p) =>
+        p.decorators.some((d) => d.definition?.name === "@path"),
+      );
+      const paramsDef = `{
+        ${params.map((p) => `${p.name}: ${resolveType(p.type, 1, namespace, context)}`).join(", ")} 
+      }`;
+      const body = args.filter((p) =>
+        p.decorators.some((d) => d.definition?.name === "@body"),
+      );
+
       let request = "null";
-      if (op.parameters.properties.has("body")) {
-        request = resolveType(
-          op.parameters.properties.get("body")!.type,
-          1,
-          namespace,
-          context,
-        );
+      if (body.length > 0) {
+        request = resolveType(body[0].type, 1, namespace, context);
       }
+      ops[identifier].params = paramsDef;
       ops[identifier].request = request;
 
       // response
@@ -85,10 +105,14 @@ export const emitRoutedTypemap = (
   };
 
   traverseNamespace(namespace);
-  let out = `export type types_${context.options["root-namespace"]} = {\n`;
+  let out = `
+${getImports(namespace)}
+
+export type types_${context.options["root-namespace"]} = {\n`;
   out += Object.entries(ops)
     .map((op) => {
       let ret = `  ['${op[0]}']: {\n`;
+      ret += `    params: ${op[1].params}\n`;
       ret += `    request: ${op[1].request}\n`;
       ret += `    response: ${op[1].response.map((res) => `{status: ${res.status}, body: ${res.body}}`).join(" | ")}\n`;
       ret += "  }";

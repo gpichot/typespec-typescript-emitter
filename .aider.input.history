@@ -1,0 +1,6 @@
+
+# 2025-08-01 16:49:27.856883
++/add src/emit_routes.ts
+
+# 2025-08-01 16:49:46.648282
++in the emit routes, I would like to add the payload in the types outputed if there is any 
