@@ -21,6 +21,7 @@ export const emitRoutedTypemap = (
     [K: string]: {
       // "string" in these does not refer to the type "string"! It's the typescript code as string.
       params: string;
+      queryParams: string;
       request: string;
       response: Array<{ status: number | "unknown"; body: string }>;
     };
@@ -33,6 +34,7 @@ export const emitRoutedTypemap = (
       const identifier = httpOp[0].path;
       ops[identifier] = {
         params: "{}",
+        queryParams: "{}",
         request: "null",
         response: [{ status: 200, body: "unknown" }],
       };
@@ -45,6 +47,17 @@ export const emitRoutedTypemap = (
       const paramsDef = `{
         ${params.map((p) => `${p.name}: ${resolveType(p.type, 1, namespace, context)}`).join(", ")} 
       }`;
+      const queryParams = args.filter((p) =>
+        p.decorators.some((d) => d.definition?.name === "@query"),
+      );
+      const queryParamsDef = `{
+        ${queryParams
+          .map((p) => {
+            const optional = p.optional ? "?" : "";
+            return `${p.name}${optional}: ${resolveType(p.type, 1, namespace, context)}`;
+          })
+          .join(", ")}
+      }`;
       const body = args.filter((p) =>
         p.decorators.some((d) => d.definition?.name === "@body"),
       );
@@ -54,6 +67,7 @@ export const emitRoutedTypemap = (
         request = resolveType(body[0].type, 1, namespace, context);
       }
       ops[identifier].params = paramsDef;
+      ops[identifier].queryParams = queryParamsDef;
       ops[identifier].request = request;
 
       // response
@@ -113,6 +127,7 @@ export type types_${context.options["root-namespace"]} = {\n`;
     .map((op) => {
       let ret = `  ['${op[0]}']: {\n`;
       ret += `    params: ${op[1].params}\n`;
+      ret += `    queryParams: ${op[1].queryParams}\n`;
       ret += `    request: ${op[1].request}\n`;
       ret += `    response: ${op[1].response.map((res) => `{status: ${res.status}, body: ${res.body}}`).join(" | ")}\n`;
       ret += "  }";

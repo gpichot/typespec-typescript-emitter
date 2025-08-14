@@ -8,5 +8,6 @@ import { fileURLToPath } from "url";
 export const TypespecTypescriptEmitterTestLibrary: TypeSpecTestLibrary =
   createTestLibrary({
     name: "typespec-typescript-emitter",
-    packageRoot: resolvePath(fileURLToPath(import.meta.url), "../../../../"),
+    packageRoot: resolvePath(fileURLToPath(import.meta.url), "../../../"),
+    jsFileFolder: "dist",
   });

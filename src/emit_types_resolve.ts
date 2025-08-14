@@ -103,7 +103,7 @@ export const resolveEnum = (
     const val =
       p.value === undefined
         ? ""
-        : " = " +
+        : ": " +
           (typeof p.value === "string" ? `'${p.value}'` : p.value.toString());
     ret = ret.addLine(
       `${p.name.includes("-") ? `'${p.name}'` : p.name}${val}${i < e.members.size ? "," : ""}`,

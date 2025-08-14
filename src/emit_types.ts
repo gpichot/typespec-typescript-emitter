@@ -26,7 +26,13 @@ const emitTypes = (
         if (resolved) {
           const doc = getDoc(context.program, e);
           if (doc) file = file.addLine(`/** ${doc} */`);
-          file = file.addLine(`export enum ${e.name} ${resolved};\n`);
+          const values = Array.from(e.members.values())
+            .map((m) => `"${m.value || e.name}"`)
+            .join(" | ");
+          file =
+            file.addLine(`export const ${e.name}Enum = ${resolved} as const;
+
+export type ${e.name} = ${values};\n`);
         }
       }
     });

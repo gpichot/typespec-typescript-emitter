@@ -85,11 +85,12 @@ export async function $onEmit(context: EmitContext) {
     // routed typemap
     if (options["enable-routed-typemap"]) {
       if (!routedTypemap) throw new Error("Routed typemap empty.");
+      const filepath = resolvePath(
+        options["out-dir"],
+        `routedTypemap_${options["root-namespace"]}.ts`,
+      );
       await emitFile(context.program, {
-        path: resolvePath(
-          options["out-dir"],
-          `routedTypemap_${options["root-namespace"]}.ts`,
-        ),
+        path: filepath,
         content: `/* eslint-disable */\n\n${autogenerateWarning}${routedTypemap}`,
       });
     }
